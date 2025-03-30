@@ -1,17 +1,12 @@
 # Makefile for CUinSPACE Simulated Flight
 COMPILE = gcc -g -Wall -Wextra -pthread
 
-TARGET = p2
-
 #files to compile
-OBJS = main event manager resource system
+OBJS = main.o event.o manager.o resource.o system.o
 
 # Default target: build the executable
-all: $(TARGET)
-
-# Linking the object files to create the executable
-$(TARGET): $(OBJS)
-    $(COMPILE) -o p2 $(OBJS)
+all: main event manager resource system
+	$(COMPILE) -o p2 $(OBJS)
 
 # Compile each source file into an object file explicitly
 main: main.c defs.h
@@ -21,7 +16,7 @@ event: event.c defs.h
     $(COMPILE) -c event.c
 
 manager: manager.c defs.h
-    $(COMPILE) -c manager.c
+    $(COMPILE) -c manager.c 
 
 resource: resource.c defs.h
     $(COMPILE) -c resource.c
@@ -31,4 +26,4 @@ system: system.c defs.h
 
 # Clean target to remove object files and the executable
 clean:
-    rm -f $(OBJS) $(TARGET)
+    rm -f $(OBJS) p2

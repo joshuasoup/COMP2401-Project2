@@ -16,7 +16,24 @@
  * @param[in]  amount        Initial amount of the resource.
  * @param[in]  max_capacity  Maximum capacity of the resource.
  */
-void resource_create(Resource **resource, const char *name, int amount, int max_capacity) {}
+void resource_create(Resource **resource, const char *name, int amount, int max_capacity)
+{
+    // allocate the memory
+    *resource = (Resource *)malloc(sizeof(Resource));
+    if (*resource == NULL)
+    {
+        perror("Failed to allocate memory for Resource struct");
+        return STATUS_INSUFFICIENT;
+    }
+    (*resource)->name = (char *)malloc(strlen(name) + 1);
+    if ((*resource)->name == NULL)
+    {
+        perror("Failed to allocate memory for name");
+        free(*resource); // Avoid memory leak
+        return STATUS_INSUFFICIENT;
+    }
+    strcpy((*resource)->name, name);
+}
 
 /**
  * Destroys a `Resource` object.
@@ -38,7 +55,8 @@ void resource_destroy(Resource *resource) {}
  * @param[in]  resource         Pointer to the `Resource`.
  * @param[in]  amount           The amount associated with the `Resource`.
  */
-void resource_amount_init(ResourceAmount *resource_amount, Resource *resource, int amount) {
+void resource_amount_init(ResourceAmount *resource_amount, Resource *resource, int amount)
+{
     resource_amount->resource = resource;
     resource_amount->amount = amount;
 }
@@ -67,7 +85,7 @@ void resource_array_clean(ResourceArray *array) {}
  *
  * Resizes the array when the capacity is reached and adds the new `Resource`.
  * Use of realloc is NOT permitted.
- * 
+ *
  * @param[in,out] array     Pointer to the `ResourceArray`.
  * @param[in]     resource  Pointer to the `Resource` to add.
  */
