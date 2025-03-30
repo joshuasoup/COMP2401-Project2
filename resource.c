@@ -19,20 +19,27 @@
 void resource_create(Resource **resource, const char *name, int amount, int max_capacity)
 {
     // allocate the memory
-    *resource = (Resource *)malloc(sizeof(Resource));
+    *resource = malloc(sizeof(Resource));
     if (*resource == NULL)
     {
         perror("Failed to allocate memory for Resource struct");
         return STATUS_INSUFFICIENT;
     }
-    (*resource)->name = (char *)malloc(strlen(name) + 1);
+
+    // allocate the memory for name and copy it
+    (*resource)->name = malloc(strlen(name) + 1);
     if ((*resource)->name == NULL)
     {
         perror("Failed to allocate memory for name");
-        free(*resource); // Avoid memory leak
+        free(*resource); //  for memory leak
         return STATUS_INSUFFICIENT;
     }
     strcpy((*resource)->name, name);
+
+    (*resource)->amount = amount;
+    (*resource)->max_capacity = max_capacity;
+
+    return STATUS_OK;
 }
 
 /**
@@ -42,7 +49,27 @@ void resource_create(Resource **resource, const char *name, int amount, int max_
  *
  * @param[in,out] resource  Pointer to the `Resource` to be destroyed.
  */
-void resource_destroy(Resource *resource) {}
+void resource_destroy(Resource *resource)
+{
+    if (resource != NULL)
+    {
+        // Free the dynamically allocated name field
+        if (resource->name != NULL)
+        {
+            free(resource->name);
+        }
+        else
+        {
+            return STATUS_INSUFFICIENT;
+        }
+        // Free the Resource structure itself
+        free(resource);
+    }
+    else
+    {
+        return STATUS_INSUFFICIENT;
+    }
+}
 
 /* ResourceAmount functions */
 
@@ -68,7 +95,20 @@ void resource_amount_init(ResourceAmount *resource_amount, Resource *resource, i
  *
  * @param[out] array  Pointer to the `ResourceArray` to initialize.
  */
-void resource_array_init(ResourceArray *array) {}
+void resource_array_init(ResourceArray *array)
+{
+    // Dynamically allocate memory for the array of Resource* with capacity of 1
+    array->resources = (Resource **)malloc(sizeof(Resource *) * 1); // Capacity 1
+    if (array->resources == NULL)
+    {
+        // Handle memory allocation failure
+        return;
+    }
+
+    // Initialize data required for the array fields
+    array->capacity = 1; // Initial capacity is 1
+    array->size = 0;
+}
 
 /**
  * Cleans up the `ResourceArray` by destroying all resources and freeing memory.
@@ -78,7 +118,20 @@ void resource_array_init(ResourceArray *array) {}
  *
  * @param[in,out] array  Pointer to the `ResourceArray` to clean.
  */
-void resource_array_clean(ResourceArray *array) {}
+void resource_array_clean(ResourceArray *array)
+{
+    if (array == NULL)
+        return STATUS_EMPTY;
+    for (int i = 0; i < array->size; i++)
+    {
+        resource_destroy(array->resources[i]);
+    }
+    free(array->resources);
+    array->resources = NULL;
+    array->size = 0;
+    array->capacity = 0;
+    return STATUS_OK;
+}
 
 /**
  * Adds a `Resource` to the `ResourceArray`, resizing if necessary (doubling the size).
@@ -89,4 +142,38 @@ void resource_array_clean(ResourceArray *array) {}
  * @param[in,out] array     Pointer to the `ResourceArray`.
  * @param[in]     resource  Pointer to the `Resource` to add.
  */
-void resource_array_add(ResourceArray *array, Resource *resource) {}
+void resource_array_add(ResourceArray *array, Resource *resource)
+{
+    // Checking to see if we need to resize
+    if (array->size >= array->capacity)
+    {
+        // Resize the array (double the capacity)
+        size_t new_capacity = array->capacity * 2;
+
+        // allocate new memory for the resized array
+        Resource **new_resources = (Resource **)malloc(sizeof(Resource *) * new_capacity);
+        if (new_resources == NULL)
+        {
+            // Handle memory allocation failure
+            return;
+        }
+
+        // copy existing elements to the new array
+        for (size_t i = 0; i < array->size; ++i)
+        {
+            new_resources[i] = array->resources[i];
+        }
+
+        // Free the old resources array since we no longer need it
+        free(array->resources);
+
+        // update the resources pointer to the new array and set the new capacity
+        array->resources = new_resources;
+        array->capacity = new_capacity;
+    }
+
+    // Add the new resource to the end of the array
+    array->resources[array->size] = resource;
+    // increase the size of the array to reflect the added resource
+    array->size++;
+}

@@ -10,20 +10,20 @@ all: main event manager resource system
 
 # Compile each source file into an object file explicitly
 main: main.c defs.h
-    $(COMPILE) -c main.c
+	$(COMPILE) -c main.c
 
 event: event.c defs.h
-    $(COMPILE) -c event.c
+	$(COMPILE) -c event.c
 
 manager: manager.c defs.h
-    $(COMPILE) -c manager.c 
+	$(COMPILE) -c manager.c 
 
 resource: resource.c defs.h
-    $(COMPILE) -c resource.c
+	$(COMPILE) -c resource.c
 
 system: system.c defs.h
-    $(COMPILE) -c system.c
+	$(COMPILE) -c system.c
 
 # Clean target to remove object files and the executable
 clean:
-    rm -f $(OBJS) p2
+	rm -f $(OBJS) p2

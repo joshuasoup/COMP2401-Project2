@@ -17,7 +17,8 @@ static void display_simulation_state(Manager *manager);
  *
  * @param[out] manager  Pointer to the `Manager` to initialize.
  */
-void manager_init(Manager *manager) {
+void manager_init(Manager *manager)
+{
     manager->simulation_running = 1; // Any non-zero value to state the sim is running
     system_array_init(&manager->system_array);
     resource_array_init(&manager->resource_array);
@@ -31,7 +32,12 @@ void manager_init(Manager *manager) {
  *
  * @param[in,out] manager  Pointer to the `Manager` to clean.
  */
-void manager_clean(Manager *manager) {}
+void manager_clean(Manager *manager)
+{
+    resource_array_clean(&(manager->resource_array));
+    system_array_clean(&(manager->system_array));
+    // add clean for the event queue later
+}
 
 /**
  * Runs the manager loop.
@@ -41,66 +47,75 @@ void manager_clean(Manager *manager) {}
  *
  * @param[in,out] manager  Pointer to the `Manager`.
  */
-void manager_run(Manager *manager) {
+void manager_run(Manager *manager)
+{
     Event event;
     int i, status;
     int event_found_flag = 0, no_oxygen_flag = 0, distance_reached_flag = 0, need_more_flag = 0, need_less_flag = 0;
-    
+
     System *sys = NULL;
 
     // Update the display of the current state of things
     display_simulation_state(manager);
 
     // Process events if one is popped
-    
+
     event_found_flag = event_queue_pop(&manager->event_queue, &event);
 
-    while (event_found_flag) {
+    while (event_found_flag)
+    {
         // Handle the event
         printf("Event: [%s] Reported Resource [%s : %d] Status [%d]\n",
-                event.system->name,
-                event.resource->name,
-                event.amount,
-                event.status);
+               event.system->name,
+               event.resource->name,
+               event.amount,
+               event.status);
 
         // Set some flags based on the event that we can react to below
-        no_oxygen_flag        = (event.status == STATUS_EMPTY && strcmp(event.resource->name, "Oxygen") == 0);
+        no_oxygen_flag = (event.status == STATUS_EMPTY && strcmp(event.resource->name, "Oxygen") == 0);
         distance_reached_flag = (event.status == STATUS_CAPACITY && strcmp(event.resource->name, "Distance") == 0);
-        need_more_flag        = (event.status == STATUS_LOW || event.status == STATUS_EMPTY || event.status == STATUS_INSUFFICIENT);
-        need_less_flag        = (event.status == STATUS_CAPACITY);
+        need_more_flag = (event.status == STATUS_LOW || event.status == STATUS_EMPTY || event.status == STATUS_INSUFFICIENT);
+        need_less_flag = (event.status == STATUS_CAPACITY);
 
-        if (no_oxygen_flag) {
+        if (no_oxygen_flag)
+        {
             printf("Oxygen depleted. Terminating all systems.\n");
         }
 
-        if (distance_reached_flag) {
+        if (distance_reached_flag)
+        {
             printf("Destination reached. Terminating all systems.\n");
         }
 
-        if (no_oxygen_flag || distance_reached_flag) {
+        if (no_oxygen_flag || distance_reached_flag)
+        {
             status = TERMINATE;
             manager->simulation_running = 0;
         }
-        else if (need_more_flag) {
+        else if (need_more_flag)
+        {
             status = FAST;
         }
-        else if (need_less_flag) {
+        else if (need_less_flag)
+        {
             status = SLOW;
         }
 
-        if (no_oxygen_flag || distance_reached_flag || need_more_flag || need_less_flag) {
+        if (no_oxygen_flag || distance_reached_flag || need_more_flag || need_less_flag)
+        {
             // Update all of the systems to speed up or slow down production, or terminate
-            for (i = 0; i < manager->system_array.size; i++) {
+            for (i = 0; i < manager->system_array.size; i++)
+            {
                 sys = manager->system_array.systems[i];
-                if (status == TERMINATE || sys->produced.resource == event.resource) {
+                if (status == TERMINATE || sys->produced.resource == event.resource)
+                {
                     sys->status = status;
                 }
-            }   
+            }
         }
 
         event_found_flag = event_queue_pop(&manager->event_queue, &event);
     }
-    
 }
 
 // Don't worry much about these! These are special codes that allow us to do some formatting in the terminal
@@ -120,14 +135,16 @@ void manager_run(Manager *manager) {
  *
  * @param[in] manager  Pointer to the `Manager` containing the simulation state.
  */
-void display_simulation_state(Manager *manager) {
+void display_simulation_state(Manager *manager)
+{
     // Static integers are allocated to the data segment, so they persist between function calls
     static const int display_interval = 1;
     static time_t last_display_time = 0;
 
     // If it has not been long enough since our previous display refresh, keep waiting.
     time_t current_time = time(NULL);
-    if (difftime(current_time, last_display_time) < display_interval) {
+    if (difftime(current_time, last_display_time) < display_interval)
+    {
         return;
     }
 
@@ -143,9 +160,10 @@ void display_simulation_state(Manager *manager) {
     printf(ANSI_LN_CLR "-------------------------\n");
 
     Resource *resource = NULL;
-    int amount = 0; 
+    int amount = 0;
     int max_capacity = 0;
-    for (int i = 0; i < manager->resource_array.size; i++) {
+    for (int i = 0; i < manager->resource_array.size; i++)
+    {
         resource = manager->resource_array.resources[i];
 
         amount = resource->amount;
@@ -161,39 +179,40 @@ void display_simulation_state(Manager *manager) {
     printf(ANSI_LN_CLR "---------------\n");
 
     System *system = NULL;
-    for (int i = 0; i < manager->system_array.size; i++) {
+    for (int i = 0; i < manager->system_array.size; i++)
+    {
         system = manager->system_array.systems[i];
 
         // Map system status code to a human-readable string
         const char *status_str;
-        switch (system->status) {
-            case TERMINATE:
-                status_str = "TERMINATE";
-                break;
-            case DISABLED:
-                status_str = "DISABLED";
-                break;
-            case SLOW:
-                status_str = "SLOW";
-                break;
-            case STANDARD:
-                status_str = "STANDARD";
-                break;
-            case FAST:
-                status_str = "FAST";
-                break;
-            default:
-                status_str = "UNKNOWN";
-                break;
+        switch (system->status)
+        {
+        case TERMINATE:
+            status_str = "TERMINATE";
+            break;
+        case DISABLED:
+            status_str = "DISABLED";
+            break;
+        case SLOW:
+            status_str = "SLOW";
+            break;
+        case STANDARD:
+            status_str = "STANDARD";
+            break;
+        case FAST:
+            status_str = "FAST";
+            break;
+        default:
+            status_str = "UNKNOWN";
+            break;
         }
 
-        printf(ANSI_LN_CLR  "%-20s: %-10s\n", system->name, status_str);
+        printf(ANSI_LN_CLR "%-20s: %-10s\n", system->name, status_str);
     }
 
-    printf(ANSI_LN_CLR  "\n");
+    printf(ANSI_LN_CLR "\n");
 
     last_display_time = current_time;
     // Flush the output to ensure it appears immediately
     fflush(stdout);
 }
-
