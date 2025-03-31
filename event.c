@@ -38,6 +38,12 @@ void event_queue_init(EventQueue *queue)
 {
     queue->head = NULL;
     queue->size = 0;
+
+    // Initialize the semaphore with an initial value of 1
+    if (sem_init(&queue->mutex, 0, 1) != 0)
+    {
+        perror("Failed to initialize queue mutex");
+    }
 }
 
 /**
@@ -61,6 +67,9 @@ void event_queue_clean(EventQueue *queue)
     }
     queue->head = NULL;
     queue->size = 0;
+
+    // Destroy the semaphore
+    sem_destroy(&queue->mutex);
 }
 
 /**
@@ -76,11 +85,15 @@ void event_queue_push(EventQueue *queue, const Event *event)
     if (queue == NULL || event == NULL)
         return;
 
+    // Wait for access to the queue
+    sem_wait(&queue->mutex);
+
     // Allocate a new event node.
     EventNode *newNode = malloc(sizeof(EventNode));
     if (newNode == NULL)
     {
         perror("Failed to allocate memory for new event node");
+        sem_post(&queue->mutex); // Release the lock before returning
         return;
     }
     newNode->event = *event; // Copy the event data (shallow copy)
@@ -91,6 +104,8 @@ void event_queue_push(EventQueue *queue, const Event *event)
     {
         newNode->next = queue->head;
         queue->head = newNode;
+        queue->size++;
+        sem_post(&queue->mutex); // Release the lock
         return;
     }
 
@@ -105,6 +120,8 @@ void event_queue_push(EventQueue *queue, const Event *event)
     newNode->next = current->next;
     current->next = newNode;
     queue->size++;
+
+    sem_post(&queue->mutex); // Release the lock
     return;
 }
 
@@ -119,20 +136,29 @@ void event_queue_push(EventQueue *queue, const Event *event)
  */
 int event_queue_pop(EventQueue *queue, Event *event)
 {
-    if (queue == NULL || queue->head == NULL || event == NULL)
+    if (queue == NULL || event == NULL)
+        return STATUS_EMPTY;
+
+    sem_wait(&queue->mutex); // Wait for access to the queue
+
+    if (queue->head == NULL)
     {
-        return STATUS_EMPTY; // No event to pop
+        sem_post(&queue->mutex); // Release the lock before returning
+        return STATUS_EMPTY;     // No event to pop
     }
-    // sets the event event data as the one from the queue head
+
+    // Sets the event data as the one from the queue head
     *event = queue->head->event;
 
-    // frees the old head
+    // Frees the old head
     EventNode *old_head = queue->head;
     queue->head = queue->head->next;
     free(old_head);
 
     // Decrement queue size
     queue->size--;
+
+    sem_post(&queue->mutex); // Release the lock
 
     return STATUS_OK;
 }

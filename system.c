@@ -137,6 +137,9 @@ static int system_convert(System *system)
     }
     else
     {
+        // Wait for access to the resource
+        sem_wait(&consumed_resource->mutex);
+
         // Attempt to consume the required resources
         if (consumed_resource->amount >= amount_consumed)
         {
@@ -147,6 +150,8 @@ static int system_convert(System *system)
         {
             status = (consumed_resource->amount == 0) ? STATUS_EMPTY : STATUS_INSUFFICIENT;
         }
+
+        sem_post(&consumed_resource->mutex); // Release the lock
     }
 
     if (status == STATUS_OK)
@@ -220,6 +225,9 @@ static int system_store_resources(System *system)
 
     amount_to_store = system->amount_stored;
 
+    // Wait for access to the resource
+    sem_wait(&produced_resource->mutex);
+
     // Calculate available space
     available_space = produced_resource->max_capacity - produced_resource->amount;
 
@@ -235,6 +243,8 @@ static int system_store_resources(System *system)
         produced_resource->amount += available_space;
         system->amount_stored = amount_to_store - available_space;
     }
+
+    sem_post(&produced_resource->mutex); // Release the lock
 
     if (system->amount_stored != 0)
     {

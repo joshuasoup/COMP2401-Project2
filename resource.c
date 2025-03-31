@@ -39,6 +39,16 @@ void resource_create(Resource **resource, const char *name, int amount, int max_
     (*resource)->amount = amount;
     (*resource)->max_capacity = max_capacity;
 
+    // Initialize the semaphore with an initial value of 1
+    if (sem_init(&(*resource)->mutex, 0, 1) != 0)
+    {
+        perror("Failed to initialize resource mutex");
+        free((*resource)->name);
+        free(*resource);
+        *resource = NULL;
+        return;
+    }
+
     return;
 }
 
@@ -62,6 +72,10 @@ void resource_destroy(Resource *resource)
         {
             return;
         }
+
+        // Destroy the semaphore
+        sem_destroy(&resource->mutex);
+
         // Free the Resource structure itself
         free(resource);
     }

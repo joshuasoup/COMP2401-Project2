@@ -36,6 +36,7 @@ typedef struct Resource
     char *name; // Dynamically allocated string
     int amount;
     int max_capacity;
+    sem_t mutex; // Semaphore for thread safety
 } Resource;
 
 // Represents the amount of a resource consumed/produced for a single system
@@ -79,6 +80,7 @@ typedef struct EventQueue
 {
     EventNode *head;
     int size;
+    sem_t mutex; // Semaphore for thread safety
 } EventQueue;
 
 // A basic dynamic array to store all of the systems in the simulation
