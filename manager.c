@@ -216,3 +216,23 @@ void display_simulation_state(Manager *manager)
     // Flush the output to ensure it appears immediately
     fflush(stdout);
 }
+
+/**
+ * Thread function for running the Manager.
+ *
+ * This function is passed to pthread_create and executes the Manager's
+ * run function in a loop until the simulation_running flag is set to 0.
+ *
+ * @param manager Pointer to the Manager to run (cast from void*)
+ * @return Always returns NULL
+ */
+void *manager_thread(void *arg)
+{
+    Manager *manager = (Manager *)arg;
+    while (manager->simulation_running)
+    {
+        manager_run(manager);
+    }
+
+    return NULL;
+}

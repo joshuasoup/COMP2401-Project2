@@ -329,3 +329,23 @@ void system_array_add(SystemArray *array, System *system)
     // increase the size of the array to reflect the added system
     array->size++;
 }
+
+/**
+ * Thread function for running a System.
+ *
+ * This function is passed to pthread_create and executes the System's
+ * run function in a loop until the System's status is set to TERMINATE.
+ *
+ * @param system Pointer to the System to run (cast from void*)
+ * @return Always returns NULL
+ */
+void *system_thread(void *arg)
+{
+    System *system = (System *)arg;
+    while (system->status != TERMINATE)
+    {
+        system_run(system);
+    }
+
+    return NULL;
+}

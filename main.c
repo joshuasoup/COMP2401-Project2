@@ -6,17 +6,51 @@
 
 void load_data(Manager *manager);
 
-int main(void) {
+int main(void)
+{
     Manager manager;
     manager_init(&manager);
     load_data(&manager);
 
-    while (manager.simulation_running) {
-        manager_run(&manager);
-        for (int i = 0; i < manager.system_array.size; ++i) {
-            system_run(manager.system_array.systems[i]);
+    // Create thread IDs
+    pthread_t manager_tid;
+    pthread_t *system_tids = malloc(sizeof(pthread_t) * manager.system_array.size);
+
+    if (!system_tids)
+    {
+        perror("Failed to allocate memory for thread IDs");
+        return 1;
+    }
+
+    // Start manager thread
+    if (pthread_create(&manager_tid, NULL, manager_thread, &manager) != 0)
+    {
+        perror("Failed to create manager thread");
+        free(system_tids);
+        return 1;
+    }
+
+    // Start system threads
+    for (int i = 0; i < manager.system_array.size; ++i)
+    {
+        if (pthread_create(&system_tids[i], NULL, system_thread, manager.system_array.systems[i]) != 0)
+        {
+            perror("Failed to create system thread");
+            // In a real application, we would need to handle this failure better
         }
     }
+
+    // Wait for manager thread to complete
+    pthread_join(manager_tid, NULL);
+
+    // Wait for all system threads to complete
+    for (int i = 0; i < manager.system_array.size; ++i)
+    {
+        pthread_join(system_tids[i], NULL);
+    }
+
+    // Free the thread ID array
+    free(system_tids);
 
     manager_clean(&manager);
     return 0;
@@ -29,7 +63,8 @@ int main(void) {
  *
  * @param[in,out] manager  Pointer to the `Manager` to populate with resource and system data.
  */
-void load_data(Manager *manager) {
+void load_data(Manager *manager)
+{
     // Create resources
     Resource *fuel, *oxygen, *energy, *distance;
     resource_create(&fuel, "Fuel", 1000, 1000);
