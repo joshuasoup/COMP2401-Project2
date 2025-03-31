@@ -36,7 +36,7 @@ void manager_clean(Manager *manager)
 {
     resource_array_clean(&(manager->resource_array));
     system_array_clean(&(manager->system_array));
-    // add clean for the event queue later
+    event_queue_clean(&(manager->event_queue));
 }
 
 /**

@@ -26,25 +26,29 @@ static int system_store_resources(System *);
  */
 void system_create(System **system, const char *name, ResourceAmount consumed, ResourceAmount produced, int processing_time, EventQueue *event_queue)
 {
-    *system = malloc(sizeof(System));
+    *system = (System *)malloc(sizeof(System));
     if (*system == NULL)
     {
         perror("Failed to allocate memory for System struct");
-        return STATUS_INSUFFICIENT;
+        return;
     }
 
     (*system)->name = malloc(strlen(name) + 1);
     if ((*system)->name == NULL)
     {
         perror("Failed to allocate memory for name");
-        return STATUS_INSUFFICIENT;
+        return;
     }
+
+    // Copy the name string into the allocated memory
+    strcpy((*system)->name, name);
 
     (*system)->consumed = consumed;
     (*system)->produced = produced;
     (*system)->processing_time = processing_time;
     (*system)->event_queue = event_queue;
     (*system)->amount_stored = 0;
+    (*system)->status = STANDARD;
 }
 
 /**
@@ -57,13 +61,13 @@ void system_create(System **system, const char *name, ResourceAmount consumed, R
 void system_destroy(System *system)
 {
     if (system == NULL)
-        return STATUS_EMPTY;
+        return;
 
     free(system->name);  // Free the dynamically allocated name field
     system->name = NULL; // Set to NULL to avoid dangling pointer
     free(system);        // Free the System struct itself
     system = NULL;       // Set to NULL to avoid dangling pointer
-    return STATUS_OK;
+    return;
 }
 
 /**
@@ -211,7 +215,7 @@ static int system_store_resources(System *system)
     if (produced_resource == NULL || system->amount_stored == 0)
     {
         system->amount_stored = 0;
-        return STATUS_OK;
+        return STATUS_EMPTY;
     }
 
     amount_to_store = system->amount_stored;
@@ -252,7 +256,7 @@ void system_array_init(SystemArray *array)
     // Dynamically allocate memory for the array of Resource* with capacity of 1
     array->systems = malloc(sizeof(System *) * 1); // Capacity 1
     if (array->systems == NULL)
-        return STATUS_INSUFFICIENT;
+        return;
 
     // Initialize data required for the array fields
     array->capacity = 1; // Initial capacity is 1
@@ -269,16 +273,16 @@ void system_array_init(SystemArray *array)
 void system_array_clean(SystemArray *array)
 {
     if (array == NULL)
-        return STATUS_EMPTY;
+        return;
     for (int i = 0; i < array->size; i++)
     {
-        resource_destroy(array->systems[i]);
+        system_destroy(array->systems[i]);
     }
     free(array->systems);
     array->systems = NULL;
     array->size = 0;
     array->capacity = 0;
-    return STATUS_OK;
+    return;
 }
 
 /**
@@ -299,7 +303,7 @@ void system_array_add(SystemArray *array, System *system)
         size_t new_capacity = array->capacity * 2;
 
         // allocate new memory for the resized array
-        Resource **new_systems = (Resource **)malloc(sizeof(Resource *) * new_capacity);
+        System **new_systems = malloc(sizeof(Resource *) * new_capacity);
         if (new_systems == NULL)
         {
             // Handle memory allocation failure
@@ -307,7 +311,7 @@ void system_array_add(SystemArray *array, System *system)
         }
 
         // copy existing elements to the new array
-        for (size_t i = 0; i < array->size; ++i)
+        for (int i = 0; i < array->size; ++i)
         {
             new_systems[i] = array->systems[i];
         }

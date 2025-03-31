@@ -50,7 +50,8 @@ void event_queue_init(EventQueue *queue)
 void event_queue_clean(EventQueue *queue)
 {
     if (queue == NULL)
-        return STATUS_EMPTY;
+        return;
+
     EventNode *current = queue->head;
     while (current != NULL)
     {
@@ -60,7 +61,6 @@ void event_queue_clean(EventQueue *queue)
     }
     queue->head = NULL;
     queue->size = 0;
-    return STATUS_OK;
 }
 
 /**
@@ -74,14 +74,14 @@ void event_queue_clean(EventQueue *queue)
 void event_queue_push(EventQueue *queue, const Event *event)
 {
     if (queue == NULL || event == NULL)
-        return STATUS_EMPTY;
+        return;
 
     // Allocate a new event node.
     EventNode *newNode = malloc(sizeof(EventNode));
     if (newNode == NULL)
     {
         perror("Failed to allocate memory for new event node");
-        return STATUS_INSUFFICIENT;
+        return;
     }
     newNode->event = *event; // Copy the event data (shallow copy)
     newNode->next = NULL;
@@ -104,6 +104,8 @@ void event_queue_push(EventQueue *queue, const Event *event)
     }
     newNode->next = current->next;
     current->next = newNode;
+    queue->size++;
+    return;
 }
 
 /**

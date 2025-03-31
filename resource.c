@@ -23,7 +23,7 @@ void resource_create(Resource **resource, const char *name, int amount, int max_
     if (*resource == NULL)
     {
         perror("Failed to allocate memory for Resource struct");
-        return STATUS_INSUFFICIENT;
+        return;
     }
 
     // allocate the memory for name and copy it
@@ -32,14 +32,14 @@ void resource_create(Resource **resource, const char *name, int amount, int max_
     {
         perror("Failed to allocate memory for name");
         free(*resource); //  for memory leak
-        return STATUS_INSUFFICIENT;
+        return;
     }
     strcpy((*resource)->name, name);
 
     (*resource)->amount = amount;
     (*resource)->max_capacity = max_capacity;
 
-    return STATUS_OK;
+    return;
 }
 
 /**
@@ -60,14 +60,14 @@ void resource_destroy(Resource *resource)
         }
         else
         {
-            return STATUS_INSUFFICIENT;
+            return;
         }
         // Free the Resource structure itself
         free(resource);
     }
     else
     {
-        return STATUS_INSUFFICIENT;
+        return;
     }
 }
 
@@ -121,7 +121,7 @@ void resource_array_init(ResourceArray *array)
 void resource_array_clean(ResourceArray *array)
 {
     if (array == NULL)
-        return STATUS_EMPTY;
+        return;
     for (int i = 0; i < array->size; i++)
     {
         resource_destroy(array->resources[i]);
@@ -130,7 +130,7 @@ void resource_array_clean(ResourceArray *array)
     array->resources = NULL;
     array->size = 0;
     array->capacity = 0;
-    return STATUS_OK;
+    return;
 }
 
 /**
@@ -159,7 +159,7 @@ void resource_array_add(ResourceArray *array, Resource *resource)
         }
 
         // copy existing elements to the new array
-        for (size_t i = 0; i < array->size; ++i)
+        for (int i = 0; i < array->size; i++)
         {
             new_resources[i] = array->resources[i];
         }
