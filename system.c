@@ -49,6 +49,9 @@ void system_create(System **system, const char *name, ResourceAmount consumed, R
     (*system)->event_queue = event_queue;
     (*system)->amount_stored = 0;
     (*system)->status = STANDARD;
+
+    // Initialize the status mutex
+    sem_init(&(*system)->status_mutex, 0, 1);
 }
 
 /**
@@ -62,6 +65,9 @@ void system_destroy(System *system)
 {
     if (system == NULL)
         return;
+
+    // Destroy the status mutex before freeing memory
+    sem_destroy(&system->status_mutex);
 
     free(system->name);  // Free the dynamically allocated name field
     system->name = NULL; // Set to NULL to avoid dangling pointer
@@ -91,11 +97,21 @@ void system_run(System *system)
 
         if (result_status != STATUS_OK)
         {
-            // Report that resources were out / insufficient
-            event_init(&event, system, system->consumed.resource, result_status, PRIORITY_HIGH, system->consumed.resource->amount);
+            // Lock before accessing resources for event creation
+            Resource *res = system->consumed.resource;
+            if (res != NULL)
+            {
+                sem_wait(&res->mutex);
+                event_init(&event, system, res, result_status, PRIORITY_HIGH, res->amount);
+                sem_post(&res->mutex);
+            }
+            else
+            {
+                event_init(&event, system, NULL, result_status, PRIORITY_HIGH, 0);
+            }
             event_queue_push(system->event_queue, &event);
             // Sleep to prevent looping too frequently and spamming with events
-            usleep(SYSTEM_WAIT_TIME * 1000);
+            usleep(SYSTEM_WAIT_TIME * 5000);
         }
     }
 
@@ -106,12 +122,24 @@ void system_run(System *system)
 
         if (result_status != STATUS_OK)
         {
-            event_init(&event, system, system->produced.resource, result_status, PRIORITY_LOW, system->produced.resource->amount);
+            // Lock before accessing resources for event creation
+            Resource *res = system->produced.resource;
+            if (res != NULL)
+            {
+                sem_wait(&res->mutex);
+                event_init(&event, system, res, result_status, PRIORITY_LOW, res->amount);
+                sem_post(&res->mutex);
+            }
+            else
+            {
+                event_init(&event, system, NULL, result_status, PRIORITY_LOW, 0);
+            }
             event_queue_push(system->event_queue, &event);
             // Sleep to prevent looping too frequently and spamming with events
-            usleep(SYSTEM_WAIT_TIME * 1000);
+            usleep(SYSTEM_WAIT_TIME * 5000);
         }
     }
+    usleep(SYSTEM_WAIT_TIME * 1000);
 }
 
 /**
@@ -182,9 +210,15 @@ static int system_convert(System *system)
 static void system_simulate_process_time(System *system)
 {
     int adjusted_processing_time;
+    int current_status;
+
+    // Get current status with mutex protection
+    sem_wait(&system->status_mutex);
+    current_status = system->status;
+    sem_post(&system->status_mutex);
 
     // Adjust based on the current system status modifier
-    switch (system->status)
+    switch (current_status)
     {
     case SLOW:
         adjusted_processing_time = system->processing_time * 2;
@@ -352,8 +386,20 @@ void system_array_add(SystemArray *array, System *system)
 void *system_thread(void *arg)
 {
     System *system = (System *)arg;
-    while (system->status != TERMINATE)
+    int current_status;
+    while (1)
     {
+        // Check status with mutex protection
+        sem_wait(&system->status_mutex);
+        current_status = system->status; // SAVE the status while holding the mutex
+        sem_post(&system->status_mutex);
+
+        // Exit condition
+        if (current_status == TERMINATE)
+        {
+            break;
+        }
+
         system_run(system);
     }
 

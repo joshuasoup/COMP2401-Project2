@@ -70,7 +70,7 @@ void load_data(Manager *manager)
     resource_create(&fuel, "Fuel", 1000, 1000);
     resource_create(&oxygen, "Oxygen", 20, 50);
     resource_create(&energy, "Energy", 30, 50);
-    resource_create(&distance, "Distance", 0, 5000);
+    resource_create(&distance, "Distance", 0, 1000);
 
     resource_array_add(&manager->resource_array, fuel);
     resource_array_add(&manager->resource_array, oxygen);

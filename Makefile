@@ -1,5 +1,5 @@
 # Makefile for CUinSPACE Simulated Flight
-COMPILE = gcc -g -Wall -Wextra -pthread
+COMPILE = gcc -g -fsanitize=thread -Wall -Wextra -Werror -pthread
 
 #files to compile
 OBJS = main.o event.o manager.o resource.o system.o

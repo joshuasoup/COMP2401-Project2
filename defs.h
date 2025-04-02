@@ -56,6 +56,7 @@ typedef struct System
     int processing_time;
     int status;
     struct EventQueue *event_queue; // Pointer to event queue shared by all systems and manager
+    sem_t status_mutex;
 } System;
 
 // Used to send notifications to the manager about an issue / state of the system
