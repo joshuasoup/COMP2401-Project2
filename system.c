@@ -40,7 +40,7 @@ void system_create(System **system, const char *name, ResourceAmount consumed, R
         return;
     }
 
-    // Copy the name string into the allocated memory
+    // copies the name string into allocated memory
     strcpy((*system)->name, name);
 
     (*system)->consumed = consumed;
@@ -50,7 +50,7 @@ void system_create(System **system, const char *name, ResourceAmount consumed, R
     (*system)->amount_stored = 0;
     (*system)->status = STANDARD;
 
-    // Initialize the status mutex
+    // Initializes the status mutex
     sem_init(&(*system)->status_mutex, 0, 1);
 }
 
@@ -66,7 +66,7 @@ void system_destroy(System *system)
     if (system == NULL)
         return;
 
-    // Destroy the status mutex before freeing memory
+    // Destroy the status mutex before the memoery is freed
     sem_destroy(&system->status_mutex);
 
     free(system->name);  // Free the dynamically allocated name field
@@ -92,7 +92,7 @@ void system_run(System *system)
 
     if (system->amount_stored == 0)
     {
-        // Need to convert resources (consume and process)
+        // Need to convert resources 
         result_status = system_convert(system);
 
         if (result_status != STATUS_OK)
@@ -122,7 +122,7 @@ void system_run(System *system)
 
         if (result_status != STATUS_OK)
         {
-            // Lock before accessing resources for event creation
+            // locka before accessing resources for event creation
             Resource *res = system->produced.resource;
             if (res != NULL)
             {
@@ -158,14 +158,14 @@ static int system_convert(System *system)
     Resource *consumed_resource = system->consumed.resource;
     int amount_consumed = system->consumed.amount;
 
-    // We can always convert without consuming anything
+    // We can convert without consuming anything
     if (consumed_resource == NULL)
     {
         status = STATUS_OK;
     }
     else
     {
-        // Wait for access to the resource
+        // forces to wait for access to the resource
         sem_wait(&consumed_resource->mutex);
 
         // Attempt to consume the required resources
@@ -179,9 +179,9 @@ static int system_convert(System *system)
             status = (consumed_resource->amount == 0) ? STATUS_EMPTY : STATUS_INSUFFICIENT;
         }
 
-        sem_post(&consumed_resource->mutex); // Release the lock
+        sem_post(&consumed_resource->mutex); // releases the Lock
     }
-
+    // as long as the status passed we can start the process time
     if (status == STATUS_OK)
     {
         system_simulate_process_time(system);
@@ -230,7 +230,7 @@ static void system_simulate_process_time(System *system)
         adjusted_processing_time = system->processing_time;
     }
 
-    // Sleep for the required time
+    // Sleep
     usleep(adjusted_processing_time * 1000);
 }
 
@@ -259,10 +259,10 @@ static int system_store_resources(System *system)
 
     amount_to_store = system->amount_stored;
 
-    // Wait for access to the resource
+    // wait for access to the resource
     sem_wait(&produced_resource->mutex);
 
-    // Calculate available space
+    // find the available space
     available_space = produced_resource->max_capacity - produced_resource->amount;
 
     if (available_space >= amount_to_store)
@@ -273,12 +273,12 @@ static int system_store_resources(System *system)
     }
     else if (available_space > 0)
     {
-        // Store as much as possible
+        // Store as much as poassibel
         produced_resource->amount += available_space;
         system->amount_stored = amount_to_store - available_space;
     }
 
-    sem_post(&produced_resource->mutex); // Release the lock
+    sem_post(&produced_resource->mutex);
 
     if (system->amount_stored != 0)
     {
@@ -302,7 +302,7 @@ void system_array_init(SystemArray *array)
     if (array->systems == NULL)
         return;
 
-    // Initialize data required for the array fields
+    // initialize data required for the array fields
     array->capacity = 1; // Initial capacity is 1
     array->size = 0;
 }

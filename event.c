@@ -93,7 +93,7 @@ void event_queue_push(EventQueue *queue, const Event *event)
     if (newNode == NULL)
     {
         perror("Failed to allocate memory for new event node");
-        sem_post(&queue->mutex); // Release the lock before returning
+        sem_post(&queue->mutex); // release the lock before returning
         return;
     }
     newNode->event = *event; // Copy the event data (shallow copy)
@@ -105,7 +105,7 @@ void event_queue_push(EventQueue *queue, const Event *event)
         newNode->next = queue->head;
         queue->head = newNode;
         queue->size++;
-        sem_post(&queue->mutex); // Release the lock
+        sem_post(&queue->mutex); 
         return;
     }
 
@@ -121,7 +121,7 @@ void event_queue_push(EventQueue *queue, const Event *event)
     current->next = newNode;
     queue->size++;
 
-    sem_post(&queue->mutex); // Release the lock
+    sem_post(&queue->mutex);
     return;
 }
 
@@ -143,7 +143,7 @@ int event_queue_pop(EventQueue *queue, Event *event)
 
     if (queue->head == NULL)
     {
-        sem_post(&queue->mutex); // Release the lock before returning
+        sem_post(&queue->mutex);
         return STATUS_EMPTY;     // No event to pop
     }
 
@@ -158,7 +158,6 @@ int event_queue_pop(EventQueue *queue, Event *event)
     // Decrement queue size
     queue->size--;
 
-    sem_post(&queue->mutex); // Release the lock
-
+    sem_post(&queue->mutex);
     return STATUS_OK;
 }
