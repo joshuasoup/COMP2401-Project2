@@ -62,7 +62,7 @@ void manager_run(Manager *manager)
 
     event_found_flag = event_queue_pop(&manager->event_queue, &event);
 
-    while (event_found_flag)
+    while (manager->simulation_running && event_found_flag)
     {
         // Handle the event
         printf("Event: [%s] Reported Resource [%s : %d] Status [%d]\n",
@@ -109,7 +109,10 @@ void manager_run(Manager *manager)
                 sys = manager->system_array.systems[i];
                 if (status == TERMINATE || sys->produced.resource == event.resource)
                 {
+                    // In manager_run when changing a system's status
+                    sem_wait(&sys->status_mutex);
                     sys->status = status;
+                    sem_post(&sys->status_mutex);
                 }
             }
         }
@@ -166,8 +169,11 @@ void display_simulation_state(Manager *manager)
     {
         resource = manager->resource_array.resources[i];
 
+        // Lock before reading resource data
+        sem_wait(&resource->mutex);
         amount = resource->amount;
         max_capacity = resource->max_capacity;
+        sem_post(&resource->mutex);
 
         printf(ANSI_LN_CLR "%s: %d / %d\n", resource->name, amount, max_capacity);
     }
